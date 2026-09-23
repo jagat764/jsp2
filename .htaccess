@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────
+#  InfinityFree compatibility layer
+# ─────────────────────────────────────────────
+
+AddDefaultCharset UTF-8
+
+# Ensure modern assets get the right MIME type
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/javascript .mjs
+    AddType text/css .css
+    AddType application/json .json
+    AddType image/svg+xml .svg
+</IfModule>
+
+# Force correct MIME even if host mis-detects it
+<FilesMatch "\.(js|mjs)$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.css$">
+    ForceType text/css
+</FilesMatch>
+<FilesMatch "\.json$">
+    ForceType application/json
+</FilesMatch>
+
+# Don't leak directory listings
+Options -Indexes

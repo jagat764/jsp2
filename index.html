@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Matrix Mobile Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Speed up + stabilise CDN loads on InfinityFree -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500/30 overflow-y-auto custom-scrollbar">
+
+    <!-- Header Interface Area -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-md z-40 sticky top-0">
+        <div class="flex items-center space-x-2.5">
+            <button id="menuDrawerToggleBtn" class="p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-cyan-400 active:scale-95 transition-all">
+                <span class="material-icons text-lg">tune</span>
+            </button>
+            <div>
+                <h1 class="text-xs font-black tracking-widest text-slate-100">MATRIX<span class="text-cyan-400">COMMAND</span></h1>
+                <p id="currentSelectionLabel" class="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-bold">Scope: Global View</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <button id="exportDataBtn" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 rounded-xl active:scale-95 transition-all flex items-center">
+                <span class="material-icons text-sm">download</span>
+            </button>
+            <div id="connectionStatus" class="status-pill status-connecting">
+                <span class="w-1 h-1 rounded-full bg-amber-400 animate-ping"></span>
+                <span>LIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top Summary Ribbon -->
+    <section class="flex overflow-x-auto whitespace-nowrap bg-slate-950 border-b border-slate-900 p-2 gap-2 scrollbar-none shadow-inner sticky top-[53px] z-30">
+        <div class="bg-slate-900/40 border border-slate-800/80 px-3 py-1.5 rounded-xl flex items-center space-x-2 min-w-[110px]">
+            <span class="material-icons text-xs text-emerald-400">sensors</span>
+            <div class="text-[11px] font-mono"><span id="activeClientsCount" class="font-bold text-white">0</span> <span class="text-slate-500">On</span></div>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 px-3 py-1.5 rounded-xl flex items-center space-x-2 min-w-[110px]">
+            <span class="material-icons text-xs text-cyan-400">phone_android</span>
+            <div class="text-[11px] font-mono"><span id="totalClientsCount" class="font-bold text-white">0</span> <span class="text-slate-500">Dev</span></div>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 px-3 py-1.5 rounded-xl flex items-center space-x-2 min-w-[110px]">
+            <span class="material-icons text-xs text-purple-400">webhook</span>
+            <div class="text-[11px] font-mono"><span id="botUsersCount" class="font-bold text-white">0</span> <span class="text-slate-500">Bot</span></div>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 px-3 py-1.5 rounded-xl flex items-center space-x-2 min-w-[110px]">
+            <span class="material-icons text-xs text-amber-400">storage</span>
+            <div class="text-[11px] font-mono"><span id="totalSMSCount" class="font-bold text-white">0</span> <span class="text-slate-500">Sms</span></div>
+        </div>
+    </section>
+
+    <!-- Content Workspace -->
+    <div class="flex-1 flex relative">
+        
+        <!-- Sliding Drawer Panel Menu Component -->
+        <div id="drawerBackdropOverlay" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-xs transition-opacity duration-300"></div>
+        <aside id="deviceSidebarSection" class="fixed top-0 left-0 h-full w-72 bg-slate-950 border-r border-slate-900 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-50 shadow-2xl md:shadow-none md:sticky md:top-[94px] md:h-[calc(100vh-94px)]">
+            <div class="p-4 bg-slate-900/60 border-b border-slate-900 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Routing Filters</span>
+                    <button id="closeDrawerBtn" class="md:hidden p-1 bg-slate-950 rounded-lg border border-slate-800 flex items-center text-slate-400">
+                        <span class="material-icons text-xs">close</span>
+                    </button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="deviceSearchInput" placeholder="Find hardware target..." class="input-element pl-8">
+                    <span class="material-icons absolute left-2.5 top-2.5 text-slate-600 text-xs">search</span>
+                </div>
+                <!-- Custom Toggles -->
+                <div class="grid grid-cols-3 p-0.5 bg-slate-950 rounded-xl border border-slate-900 text-center">
+                    <button id="statusFilterBtn-all" class="subtab-pill subtab-pill-active">ALL</button>
+                    <button id="statusFilterBtn-online" class="subtab-pill subtab-pill-inactive">ON</button>
+                    <button id="statusFilterBtn-offline" class="subtab-pill subtab-pill-inactive">OFF</button>
+                </div>
+            </div>
+            <!-- Dynamic Selection Lists -->
+            <div id="deviceTabsListContainer" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                <div class="text-xs text-slate-600 text-center py-6 font-mono">Loading data entries...</div>
+            </div>
+        </aside>
+
+        <!-- Right Side Primary Live Work Space Monitor View -->
+        <div class="flex-1 flex flex-col bg-slate-900/10">
+            <!-- Global Search Entry Buffer Bar -->
+            <div class="p-2.5 bg-slate-900/20 border-b border-slate-900/60 flex items-center justify-between gap-3 sticky top-[94px] bg-slate-950 z-20">
+                <div class="relative flex-1">
+                    <input type="text" id="panelSearchInput" placeholder="Query content parameters..." class="input-element pl-8 font-mono text-xs">
+                    <span class="material-icons absolute left-2.5 top-2 text-slate-600 text-sm">manage_search</span>
+                </div>
+            </div>
+
+            <!-- Main Log Dashboard Feed -->
+            <main class="flex-1 p-3 space-y-4 pb-24">
+                <!-- Tab 1: Clients Panel View -->
+                <div id="tabContent-clients" class="space-y-2.5">
+                    <h3 class="section-title px-1">Hardware Profile Inventories</h3>
+                    <div id="clientsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div class="status-placeholder">Awaiting live client synchronization profiles...</div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Isolated SMS Logs Tracking Sheets -->
+                <div id="tabContent-messages" class="hidden space-y-2.5">
+                    <div class="flex items-center justify-between p-2 bg-slate-950/60 rounded-xl border border-slate-900">
+                        <div class="flex items-center space-x-1.5 overflow-hidden">
+                            <h3 class="section-title truncate">Logs Feed</h3>
+                            <span id="activeDeviceFilterLabel" class="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-1.5 py-0.5 rounded">All Devices</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <button id="triggerSmsFetchBtn" class="btn-secondary hidden flex items-center space-x-1 py-1 px-2.5 text-[10px]">
+                                <span class="material-icons text-xs">sync_alt</span>
+                                <span>Fetch Latest</span>
+                            </button>
+                            <button id="triggerSmsSendBtn" class="hidden bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold text-[10px] font-mono rounded-xl px-3 py-2 transition flex items-center space-x-1.5">
+                                <span class="material-icons text-sm">send</span>
+                                <span>SEND SMS</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="smsMessagesContainer" class="space-y-2">
+                        <div class="status-placeholder">Select a client profile card to inspect inbound transactions logs.</div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Bot Users Settings Mapping Panel -->
+                <div id="tabContent-bots" class="hidden space-y-2.5">
+                    <h3 class="section-title px-1">Relay Matrix Gateways</h3>
+                    <div class="table-frame">
+                        <table class="w-full text-left border-collapse text-xs font-mono">
+                            <thead>
+                                <tr class="table-header">
+                                    <th class="p-3">Gateway Token ID</th>
+                                    <th class="p-3">Channel Endpoint</th>
+                                    <th class="p-3">Label Descriptor</th>
+                                    <th class="p-3">Forward Param</th>
+                                </tr>
+                            </thead>
+                            <tbody id="botsTableBody" class="divide-y divide-slate-900 text-slate-300">
+                                <tr><td colspan="4" class="p-4 text-center text-slate-600">Awaiting system parameters synchronization arrays...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Links Proxy Status Matrix Layout -->
+                <div id="tabContent-links" class="hidden space-y-2.5">
+                    <h3 class="section-title px-1">Proxy Access Links</h3>
+                    <div class="table-frame">
+                        <table class="w-full text-left border-collapse text-xs font-mono">
+                            <thead>
+                                <tr class="table-header">
+                                    <th class="p-3">Sub-Path Token</th>
+                                    <th class="p-3">Hardware Target ID Reference</th>
+                                    <th class="p-3 text-right">Status Flag</th>
+                                </tr>
+                            </thead>
+                            <tbody id="linksTableBody" class="divide-y divide-slate-900 text-slate-300">
+                                <tr><td colspan="3" class="p-4 text-center text-slate-600">No active parameters logged inside data tree paths.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Android Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-40 grid grid-cols-4 shadow-[0_-4px_15px_rgba(0,0,0,0.4)]">
+        <button id="bottomTabBtn-clients" class="bottom-nav-item bottom-nav-active">
+            <span class="material-icons">dashboard</span>
+            <span>Grid</span>
+        </button>
+        <button id="bottomTabBtn-messages" class="bottom-nav-item bottom-nav-inactive">
+            <span class="material-icons">forum</span>
+            <span>SMS Feed</span>
+        </button>
+        <button id="bottomTabBtn-bots" class="bottom-nav-item bottom-nav-inactive">
+            <span class="material-icons">memory</span>
+            <span>Relays</span>
+        </button>
+        <button id="bottomTabBtn-links" class="bottom-nav-item bottom-nav-inactive">
+            <span class="material-icons">dns</span>
+            <span>Proxies</span>
+        </button>
+    </nav>
+
+    <!-- Debug Toasts Container -->
+    <div id="toastNotificationContainer" class="fixed bottom-20 right-4 left-4 md:left-auto z-50 flex flex-col gap-1.5 max-w-sm pointer-events-none"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
